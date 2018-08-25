@@ -23,11 +23,7 @@ export default class RecurrencePicker extends Component {
     this.setState({
       selected: value
     });
-    this.setCallback();
-  }
-
-  setCallback = () =>{
-    this.props.callback(this.state.selected);
+    this.props.callback(value);
   }
 
   render() {

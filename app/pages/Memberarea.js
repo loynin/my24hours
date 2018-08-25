@@ -3,7 +3,6 @@
 import React, { Component } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TextInput,
   ScrollView,
@@ -13,7 +12,10 @@ import {
 
 } from 'react-native';
 
+import { Container, Header, Content, List, ListItem, Left, Body, Right, Thumbnail, Text, Title } from 'native-base';
 import Tasklist from '../components/Tasklist';
+import DigitalClock from '../components/DigitalClock';
+import CountDown from '../components/CountDown';
 import {Actions} from 'react-native-router-flux';
 
 export default class Memberarea extends Component {
@@ -22,13 +24,30 @@ export default class Memberarea extends Component {
     super(props);
     this.state = {
       userid: -1,
-      token: ''
+      token: '',
+      tasks:[],
     }
   }
 
   componentDidMount(){
+    this._isMounted = true;
     this._loadInitialState().done();
+    if (this._isMounted){
+      var tasks1 = this.getTasks();
+    }
   }
+
+
+
+    componentWillReceiveProps(nextProps){
+      this._isMounted = true;
+      this._loadInitialState().done();
+      if (this._isMounted){
+        var tasks1 = this.getTasks();
+      }
+
+      }
+
 
 _loadInitialState = async () => {
   var value = await AsyncStorage.getItem('userinfo');
@@ -48,28 +67,64 @@ addNewTask() {
     Actions.newtask();
 }
 
+async getTasks(){
+  try{
+    let response = await fetch(
+      'http://loynin.changeip.net/api/v1/task'
+    );
+
+    let responseJson = await response.json();
+    this.setState(previousState => {
+      return { tasks: responseJson.task};
+    });
+    console.log(this.state.tasks);
+    return responseJson.task;
+  }catch(error){
+    Alert.alert('Error get tasks');
+  };
+}
+
   render() {
     return (
-      <View style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.headerText}> - Note - </Text>
-          </View>
-          <ScrollView style={styles.schoolContainer}>
+      <Container>
+            <Header>
+              <Body>
+                <Title>My 24 Hours</Title>
+                </Body>
+            </Header>
+            <View style={styles.timer}>
+                {
+                  //<Text style={styles.timerText}>00:00:00</Text>
+                }
+                <CountDown clockStyles={styles.timerText} />
 
-          </ScrollView>
-          <View style={styles.footer}>
-              <TextInput
-                  style={styles.textInput}
-                  placeholder='>note'
-                  placeholderTextColor='white'
-                  underlineColorAndroid='transparent'>
-              </TextInput>
+            </View>
+              <Content>
 
-          </View>
-          <TouchableOpacity style={styles.addButton} onPress={this.addNewTask}>
-              <Text style={styles.addButtonText}>+</Text>
-          </TouchableOpacity>
-      </View>
+
+                <List dataArray={this.state.tasks}
+                  renderRow={(item) =>
+                    <ListItem avatar>
+                        <Body>
+                            <Text>{item.title}</Text>
+                            <Text note>{item.duration} minutes</Text>
+                        </Body>
+                        <Right>
+                          <Text note>{item.start_time}</Text>
+                        </Right>
+                    </ListItem>
+                  }>
+                  </List>
+
+              </Content>
+
+              <TouchableOpacity style={styles.addButton} onPress={this.addNewTask}>
+                  <Text style={styles.addButtonText}>+</Text>
+              </TouchableOpacity>
+            </Container>
+
+
+
     );
   }
 }
@@ -112,12 +167,12 @@ const styles = StyleSheet.create({
   addButton: {
     position: 'absolute',
     zIndex: 11,
-    right: 20,
-    bottom: 90,
+    right: 10,
+    bottom: 10,
     backgroundColor: '#E91E63',
-    width: 90,
-    height: 90,
-    borderRadius: 50,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 8,
@@ -125,6 +180,18 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: '#fff',
     fontSize: 24,
+  },
+  timer: {
+    height: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#aaa',
+
+  },
+  timerText: {
+    fontSize: 50,
+
   },
 
 });

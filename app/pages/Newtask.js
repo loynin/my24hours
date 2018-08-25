@@ -29,16 +29,22 @@ export default class Newtask extends Component {
     description: '',
     recurrence: 0,
     userid: -1,
+    token: '',
   };
 
   //Loading userid from saving AsyncStorage
   componentDidMount(){
+    this._isMounted = true;
     this._loadInitialState().done();
   }
 
+  componentWillUnmount() {
+      this._isMounted = false;
+    }
+
   _loadInitialState = async () => {
     var value = await AsyncStorage.getItem('userinfo');
-    if (value !== null){
+    if ((value !== null) && (this._isMounted)){
       var userinfo = JSON.parse(value);
       //Alert.alert(userinfo);
       this.setState(previousState => {
@@ -86,7 +92,7 @@ export default class Newtask extends Component {
       var newDate = days[d.getDay()] + ", " + months[d.getMonth()] + " " + d.getDate();
       return newDate;
     }
-    var newDate = d.getYear() + "-" + d.getMonth() + "-" + d.getDay();
+    var newDate = d.getFullYear() + "-" + (d.getMonth()+1) + "-" + d.getDate();
     return newDate;
     //return  value.getMonth()+1 + "/" + value.getDate() + "/" + value.getYear();
 
@@ -112,7 +118,37 @@ export default class Newtask extends Component {
       Actions.pop();
   }
 
-  saveTask(){
+  saveTask = async() => {
+      var mytask = {
+        title: this.state.title,
+        description: this.state.description,
+        start_date: this.state.data_date,
+        start_time: this.state.data_time,
+        duration: this.state.duration,
+        recuring_id: this.state.recurrence,
+        user_id: this.state.userid,
+      };
+      console.log(JSON.stringify(mytask));
+
+      if (this.state.title == '' || this.state.duration == 0 ){
+        Alert.alert('Title and duration are required! Please check again...');
+      } else {
+        fetch('http://loynin.changeip.net/api/v1/task?token=' + this.state.token ,{
+          method: 'POST',
+          headers: {
+            'Accept': 'applicatoin/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(mytask),
+        })
+        .then((response) => response.json())
+        .then((responseJson) =>{
+          if (responseJson.msg == "Success"){
+            Alert.alert("Creating task is " + responseJson.msg);
+            Actions.pop({refresh:{}});
+          }
+        })
+      }
 
   }
 
@@ -129,7 +165,7 @@ export default class Newtask extends Component {
   }
 
   render() {
-    const { isDateTimePickerVisible, selectedDate, selectedTime, duration, title, description,userid } = this.state;
+    const { isDateTimePickerVisible, selectedDate, selectedTime, duration, title, description,userid, token } = this.state;
     return (
       <View>
       <Header style={styles.header}>
@@ -141,7 +177,7 @@ export default class Newtask extends Component {
         <Body>
         </Body>
         <Right>
-          <Button transparent>
+          <Button transparent onPress={this.saveTask.bind(this)}>
             <Icon name='checkmark' style={styles.headerText}/>
           </Button>
         </Right>
@@ -151,6 +187,7 @@ export default class Newtask extends Component {
             style={styles.titleDescription}
             placeholder="Enter title, times, people, places"
             placeholderTextColor='#fff'
+            onChange={this.onTitleChange.bind(this)}
             />
         </Item>
         <View style={styles.sectionHeader}>
@@ -185,6 +222,7 @@ export default class Newtask extends Component {
               style={styles.taskDescription}
               placeholder='Task description'
               multiline={true}
+              onChange={this.onDescriptionChange.bind(this)}
           />
         </Item>
 
